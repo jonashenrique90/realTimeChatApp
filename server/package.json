@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "main": "server.js",
   "license": "MIT",
+  "author": {
+    "name": "Jonas Henrique && Jack Herrington",
+    "email": "jonas.herique90@gmail.com | jherr@pobox.com"
+  },
   "scripts": { 
     "start": "node server.js"
   },
