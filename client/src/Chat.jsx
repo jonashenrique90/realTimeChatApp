@@ -1,24 +1,24 @@
 import React from 'react';
-
-import { ApolloClient, InMemoryCache, ApolloProvider, useQuery, gql  } from '@apollo/client';
-
-import {
-    Container,
-    Row,
-    Col,
-    FormInput,
-    Button
+import { ApolloClient, InMemoryCache, ApolloProvider, useSubscription, gql, useMutation  } from '@apollo/client';
+import { WebSocketLink } from '@apollo/client/link/ws';
+import { Container, Row, Col, FormInput, Button } from "shards-react";
 
 
-} from "shards-react"
+const link = new WebSocketLink({
+    uri: `ws://localhost:4000/`,
+    options: {
+      reconnect: true
+    }
+  });
 
 const client = new ApolloClient({
-  uri: 'http://localhost:4000/',
-  cache: new InMemoryCache()
+    link,
+    uri: 'http://localhost:4000/',
+    cache: new InMemoryCache()
 });
 
 const GET_MESSAGES = gql`
-query {
+subscription {
     messages {
         id
         content
@@ -26,8 +26,13 @@ query {
     }
 }`;
 
+const POST_MESSAGE = gql`
+mutation ($user:String!, $content:String!) {
+    postMessage(user: $user, content: $content)
+}`;
+
 const Messages = ({ user }) => {
-    const { data } = useQuery(GET_MESSAGES);
+    const { data } = useSubscription(GET_MESSAGES);
     if(!data) {
         return null;
     }
@@ -76,11 +81,27 @@ const Messages = ({ user }) => {
 
 const Chat = () => {
     const [state, stateSet] = React.useState({
-        user: 'Jack',
+        user: 'Jonas',
         content: ''
 ,    })
+
+    const [postMessage] = useMutation(POST_MESSAGE);
+
+    const onSend = () => {
+        if(state.content.length > 0) {
+            postMessage({
+                variables: state,
+            })
+            
+        }
+        stateSet({
+            ...state,
+            content: '',
+        })
+    }
     return (
         <Container>
+            <div style={{border: '2px solid #f3f3', padding: '2em'}}>
             <Messages user={state.user} />
             <Row>
                 <Col xs={2} style={{padding: 0}}>
@@ -99,11 +120,24 @@ const Chat = () => {
                         value={state.content}
                         onChange={(evt) => stateSet({
                             ...state,
-                            user: evt.target.value,
+                            content: evt.target.value,
                         })}
+                        onKeyUp={(evt) => {
+                            if(evt.keyCode === 13) {
+                                onSend();
+                            }
+                        }}
                     />
                 </Col>
+                <Col xs={2} style={{padding: 0}}>
+                    <Button onClick={() => onSend()}
+                    >
+                        Send
+                    </Button>
+                </Col>
             </Row>
+            </div>
+            
         </Container>
     )
 }
